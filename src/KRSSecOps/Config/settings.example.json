@@ -1,0 +1,12 @@
+{
+    "TenantId": "<tenant-guid>",
+    "ClientId": "<app-registration-client-id>",
+    "CertificateThumbprint": "<certificate-thumbprint>",
+    "Organization": "<tenant>.onmicrosoft.com",
+    "PilotDomain": "m365.kingsruleusa.com",
+    "PilotGroupId": "<pilot-security-group-object-id>",
+    "StaleAccountDays": 90,
+    "CredentialExpiryDays": 30,
+    "LogPath": "",
+    "ReportPath": ""
+}

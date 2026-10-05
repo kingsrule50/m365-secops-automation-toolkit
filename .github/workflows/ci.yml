@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Analyze and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install modules
+        run: |
+          Set-PSResourceRepository -Name PSGallery -Trusted
+          Install-PSResource -Name Microsoft.Graph.Authentication -Version '[2.20.0,)' -Scope CurrentUser -Quiet
+          Install-PSResource -Name Pester -Version '[5.5.0,5.99.99]' -Scope CurrentUser -Quiet
+          Install-PSResource -Name PSScriptAnalyzer -Version '[1.23.0,)' -Scope CurrentUser -Quiet
+          Get-Module -ListAvailable Microsoft.Graph.Authentication, Pester, PSScriptAnalyzer | Select-Object Name, Version | Format-Table
+
+      # No tenant credentials exist in this repository or its secrets.
+      # Every Graph call is mocked, so the tests run anywhere.
+      - name: Analyze, test and package
+        run: ./build/build.ps1 -Task Analyze, Test, Package
+
+      - name: Job summary
+        if: always()
+        run: |
+          $coverage = Get-Content ./build/output/coverage.txt -ErrorAction SilentlyContinue
+          [xml]$results = Get-Content ./build/output/testResults.xml -ErrorAction SilentlyContinue
+          $r = $results.'test-results'
+          @"
+          ### KRSSecOps on ${{ matrix.os }}
+          | Tests | Passed | Failed | Coverage |
+          | --- | --- | --- | --- |
+          | $($r.total) | $([int]$r.total - [int]$r.failures - [int]$r.errors) | $($r.failures) | $coverage% |
+          "@ | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+
+      - name: Upload test results and coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: |
+            build/output/testResults.xml
+            build/output/coverage.xml

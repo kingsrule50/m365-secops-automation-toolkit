@@ -1,0 +1,24 @@
+# Tenant-specific settings and anything that can carry tenant data or keys.
+# Only settings.example.json is committed.
+src/KRSSecOps/Config/settings.json
+*.pfx
+*.cer
+*.key
+*.pem
+
+# Local output (default locations live outside the repo, these are belt and braces)
+logs/
+reports/
+out/
+*.jsonl
+
+# Test and build output
+testResults.xml
+coverage.xml
+build/output/
+
+# Editor and OS noise
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

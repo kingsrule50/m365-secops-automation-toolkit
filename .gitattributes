@@ -1,0 +1,5 @@
+# Keep LF line endings in the repo and the working copy on every OS,
+# so Windows and the Ubuntu CI runner see byte-identical files.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
