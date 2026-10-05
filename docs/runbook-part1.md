@@ -157,7 +157,7 @@ Then open the Actions tab and confirm both CI jobs (Windows and Ubuntu) are gree
 
 ## 9. Screenshot checklist (essential only)
 
-The callouts in steps 3, 7 and 8 say when to take each one. Save them to `docs/screenshots/`:
+The callouts in steps 3, 7 and 8 say when to take each one. Save them to `screenshots/`:
 
 1. `01-app-certificate.png`: app registration > Certificates & secrets, certificate listed, **no client secrets**
 2. `02-api-permissions.png`: the six granted application permissions
