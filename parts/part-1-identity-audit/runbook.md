@@ -6,7 +6,7 @@ Allow about 90 minutes the first time, plus one overnight wait so the test activ
 ## 0. Before you start
 
 - [ ] Purview lab finished, and its policies left in place (Part 2 exports them)
-- [ ] Tenant owner approval recorded in [change-log.md](change-log.md) for: the app registration, admin consent for the Part 1 read permissions, and creating pilot users and a pilot group
+- [ ] Tenant owner approval recorded in [change-log.md](../../docs/change-log.md) for: the app registration, admin consent for the Part 1 read permissions, and creating pilot users and a pilot group
 - [ ] PowerShell 7.4+: `winget install --id Microsoft.PowerShell` then open **PowerShell 7** (not Windows PowerShell 5.1)
 - [ ] Git and VS Code with the PowerShell extension
 
@@ -157,7 +157,7 @@ Then open the Actions tab and confirm both CI jobs (Windows and Ubuntu) are gree
 
 ## 9. Screenshot checklist (essential only)
 
-The callouts in steps 3, 7 and 8 say when to take each one. Save them to `screenshots/`:
+The callouts in steps 3, 7 and 8 say when to take each one. Save them to `parts/part-1-identity-audit/screenshots/`:
 
 1. `01-app-certificate.png`: app registration > Certificates & secrets, certificate listed, **no client secrets**
 2. `02-api-permissions.png`: the six granted application permissions
