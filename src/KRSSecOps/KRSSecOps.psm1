@@ -7,6 +7,7 @@ $script:KRSConfig         = $null
 $script:KRSCorrelationId  = $null
 $script:KRSPrincipalCache = @{}
 $script:KRSPilotMemberIds = $null
+$script:KRSPrivilegedPrincipalIds = $null
 $script:KRSGraphRequestCount = 0
 
 $private = @(Get-ChildItem -Path (Join-Path $PSScriptRoot 'Private') -Filter '*.ps1' -Recurse -ErrorAction SilentlyContinue)

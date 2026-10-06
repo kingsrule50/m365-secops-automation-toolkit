@@ -27,4 +27,5 @@ function Disconnect-KRSTenant {
     $script:KRSCorrelationId = $null
     $script:KRSPrincipalCache = @{}
     $script:KRSPilotMemberIds = $null
+    $script:KRSPrivilegedPrincipalIds = $null
 }

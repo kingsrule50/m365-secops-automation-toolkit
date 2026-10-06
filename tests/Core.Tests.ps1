@@ -83,6 +83,20 @@ Describe 'Get-KRSConfig' {
     }
 }
 
+Describe 'Format-KRSDayCount' {
+    It 'formats <Days> as <Expected>' -ForEach @(
+        @{ Days = 1; Expected = '1 day' }
+        @{ Days = 0; Expected = '0 days' }
+        @{ Days = 5; Expected = '5 days' }
+        @{ Days = -1; Expected = '-1 day' }
+    ) {
+        InModuleScope KRSSecOps -Parameters @{ Days = $Days; Expected = $Expected } {
+            param($Days, $Expected)
+            Format-KRSDayCount -Days $Days | Should -Be $Expected
+        }
+    }
+}
+
 Describe 'Write-KRSLog' {
     It 'writes one JSON line with the correlation ID, even under -WhatIf' {
         Initialize-TestSession -Drive $TestDrive
@@ -141,6 +155,19 @@ Describe 'Invoke-KRSIdentityAudit' {
         $null = Invoke-KRSIdentityAudit -Check MfaGap
         Should -Invoke Get-KRSMfaGap -ModuleName KRSSecOps -Times 1 -Exactly
         Should -Invoke Get-KRSStaleAccount -ModuleName KRSSecOps -Times 0
+    }
+
+    It 'passes -InactiveDays to the stale and guest checks and records it' {
+        $summary = Invoke-KRSIdentityAudit -Check StaleAccount, GuestAccess -InactiveDays 1
+        Should -Invoke Get-KRSStaleAccount -ModuleName KRSSecOps -ParameterFilter { $InactiveDays -eq 1 }
+        Should -Invoke Get-KRSGuestAccessReport -ModuleName KRSSecOps -ParameterFilter { $InactiveDays -eq 1 }
+        $summary.InactiveDays | Should -Be 1
+    }
+
+    It 'defaults -InactiveDays to the settings value' {
+        $summary = Invoke-KRSIdentityAudit -Check StaleAccount
+        Should -Invoke Get-KRSStaleAccount -ModuleName KRSSecOps -ParameterFilter { $InactiveDays -eq 90 }
+        $summary.InactiveDays | Should -Be 90
     }
 
     It 'passes Scope and Redact through to the checks' {

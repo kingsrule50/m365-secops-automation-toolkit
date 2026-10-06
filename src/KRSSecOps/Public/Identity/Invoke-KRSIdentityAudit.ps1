@@ -21,6 +21,10 @@ function Invoke-KRSIdentityAudit {
     .PARAMETER Redact
         Masks identities outside the pilot in every output. Use it for anything you will share.
 
+    .PARAMETER InactiveDays
+        Inactivity threshold for the stale account and guest checks. Defaults to StaleAccountDays in settings (90).
+        Recorded in summary.json so every evidence folder states the threshold it used.
+
     .PARAMETER OutputPath
         Parent folder for the evidence folder. Defaults to ReportPath in settings.
 
@@ -31,6 +35,11 @@ function Invoke-KRSIdentityAudit {
         Invoke-KRSIdentityAudit -Scope Tenant -Redact
 
         Full audit, shareable output.
+
+    .EXAMPLE
+        Invoke-KRSIdentityAudit -Scope Pilot -InactiveDays 30 -Redact
+
+        Pilot audit with a 30-day inactivity threshold.
 
     .EXAMPLE
         Invoke-KRSIdentityAudit -Check MfaGap, StaleAccount | Select-Object -ExpandProperty Checks
@@ -51,6 +60,10 @@ function Invoke-KRSIdentityAudit {
         [switch]$Redact,
 
         [Parameter()]
+        [ValidateRange(1, 3650)]
+        [int]$InactiveDays,
+
+        [Parameter()]
         [string]$OutputPath,
 
         [Parameter()]
@@ -60,20 +73,21 @@ function Invoke-KRSIdentityAudit {
 
     $config = Get-KRSActiveConfig
     if (-not $OutputPath) { $OutputPath = $config.ReportPath }
+    if (-not $PSBoundParameters.ContainsKey('InactiveDays')) { $InactiveDays = [int]$config.StaleAccountDays }
     $started = [datetime]::UtcNow
     $folder = Join-Path $OutputPath ('IdentityAudit-{0}' -f $started.ToString('yyyyMMdd-HHmmss'))
     $null = New-Item -ItemType Directory -Path $folder -Force -WhatIf:$false -Confirm:$false
 
     $definitions = [ordered]@{
         MfaGap            = { Get-KRSMfaGap -Scope $Scope -Redact:$Redact -IncludeCompliant }
-        StaleAccount      = { Get-KRSStaleAccount -Scope $Scope -Redact:$Redact }
+        StaleAccount      = { Get-KRSStaleAccount -Scope $Scope -Redact:$Redact -InactiveDays $InactiveDays }
         PrivilegedRole    = { Get-KRSPrivilegedRoleReport -Redact:$Redact -IncludeCompliant }
-        GuestAccess       = { Get-KRSGuestAccessReport -Scope $Scope -Redact:$Redact -IncludeCompliant }
+        GuestAccess       = { Get-KRSGuestAccessReport -Scope $Scope -Redact:$Redact -InactiveDays $InactiveDays -IncludeCompliant }
         AppCredentialRisk = { Get-KRSAppCredentialRisk -IncludeCompliant }
         ConditionalAccess = { Get-KRSConditionalAccessInventory -Redact:$Redact -IncludeCompliant }
     }
 
-    Write-KRSLog -Action 'AuditStart' -Target $config.TenantId -Message "Scope=$Scope Redact=$([bool]$Redact) Checks=$($Check -join ',')"
+    Write-KRSLog -Action 'AuditStart' -Target $config.TenantId -Message "Scope=$Scope Redact=$([bool]$Redact) InactiveDays=$InactiveDays Checks=$($Check -join ',')"
 
     $allFindings = [System.Collections.Generic.List[object]]::new()
     $results = foreach ($name in $definitions.Keys) {
@@ -130,6 +144,7 @@ function Invoke-KRSIdentityAudit {
         PilotDomain     = $config.PilotDomain
         Scope           = $Scope
         Redacted        = [bool]$Redact
+        InactiveDays    = $InactiveDays
         StartedUtc      = $started
         DurationSeconds = [math]::Round(([datetime]::UtcNow - $started).TotalSeconds, 1)
         TotalFindings   = $allFindings.Count

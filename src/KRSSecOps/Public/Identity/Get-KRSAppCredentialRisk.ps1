@@ -96,8 +96,8 @@ function Get-KRSAppCredentialRisk {
             $lifetime = if ($start -and $end) { ($end - $start).TotalDays } else { 0 }
 
             $finding, $severity = switch ($true) {
-                ($null -ne $daysLeft -and $daysLeft -ge 0 -and $daysLeft -le $ExpiryDays) { "$($entry.Kind) expires in $daysLeft days"; 'High'; break }
-                ($null -ne $daysLeft -and $daysLeft -lt 0) { "Expired $($entry.Kind.ToLower()) still attached ($(-$daysLeft) days ago)"; 'Low'; break }
+                ($null -ne $daysLeft -and $daysLeft -ge 0 -and $daysLeft -le $ExpiryDays) { "$($entry.Kind) expires in $(Format-KRSDayCount -Days $daysLeft)"; 'High'; break }
+                ($null -ne $daysLeft -and $daysLeft -lt 0) { "Expired $($entry.Kind.ToLower()) still attached ($(Format-KRSDayCount -Days (-$daysLeft)) ago)"; 'Low'; break }
                 ($entry.Kind -eq 'Secret' -and $lifetime -gt 366) { "Client secret valid for $([int]($lifetime / 365.25 * 12)) months (keep under 12)"; 'Medium'; break }
                 ($entry.Kind -eq 'Secret') { 'Client secret in use: prefer a certificate or managed identity'; 'Low'; break }
                 default { 'OK'; 'Info' }

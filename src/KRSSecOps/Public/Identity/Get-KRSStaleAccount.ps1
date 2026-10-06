@@ -77,7 +77,7 @@ function Get-KRSStaleAccount {
             if ($lastSignIn) {
                 if ($lastSignIn -ge $cutoff) { continue }
                 $daysInactive = [int]($now - $lastSignIn).TotalDays
-                $finding = "No sign-in for $daysInactive days"
+                $finding = "No sign-in for $(Format-KRSDayCount -Days $daysInactive)"
             }
             else {
                 if ($created -and $created -ge $cutoff) { continue }

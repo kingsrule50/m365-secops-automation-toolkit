@@ -3,7 +3,7 @@
 ![PowerShell](https://img.shields.io/badge/PowerShell-7.4-5391FE?logo=powershell&logoColor=white)
 ![Microsoft Graph](https://img.shields.io/badge/Microsoft%20Graph-v1.0-0078D4?logo=microsoft&logoColor=white)
 ![Entra ID](https://img.shields.io/badge/Microsoft%20Entra%20ID-P2%20%2F%20PIM-0078D4?logo=microsoftazure&logoColor=white)
-![Pester](https://img.shields.io/badge/Pester-119%20tests-2E7D32)
+![Pester](https://img.shields.io/badge/Pester-128%20tests-2E7D32)
 [![CI](https://github.com/kingsrule50/m365-secops-automation-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/kingsrule50/m365-secops-automation-toolkit/actions/workflows/ci.yml)
 
 **An enterprise-grade PowerShell module that audits a Microsoft 365 tenant's identity security posture with one command — certificate-only authentication, least-privilege Graph permissions, a pilot-scoped blast radius, and a tested, CI-verified codebase.**
@@ -32,7 +32,7 @@ I designed this lab to demonstrate my ability to:
 - Control blast radius in a shared tenant with a **pilot domain, a pilot group and a write-side scope guard**
 - Audit MFA coverage, stale accounts, standing privileged access, guests, app credentials and Conditional Access
 - Produce severity-ranked findings and **redacted evidence** safe to share
-- Prove the code works with **119 Pester tests** and **GitHub Actions CI** on Windows and Ubuntu
+- Prove the code works with **128 Pester tests** and **GitHub Actions CI** on Windows and Ubuntu
 - Follow a change-control workflow: preview with `-WhatIf`, record approval, apply, validate
 
 ---
@@ -224,8 +224,8 @@ An audit is only convincing if it finds something. I created each risk deliberat
 | Standing admin | Daniel: User Administrator, **active, permanent** | **High** — standing privileged access; **Critical** once the MFA report shows him as admin |
 | PIM done right | Priya: Security Reader, **eligible only** | Info — eligible through PIM |
 | Compliant user | Sofia registered Microsoft Authenticator | No finding |
-| Expiring credential | `app-krs-demo-legacy` with a 7-day client secret | **High** — secret expires in 6–7 days |
-| Stale accounts | Marcus and Daniel never sign in | Medium — never signed in |
+| Expiring credential | `app-krs-demo-legacy` with a 7-day client secret | **High** — secret expires within 30 days |
+| Stale accounts | Marcus, Daniel and Priya never sign in | Medium — enabled but never signed in |
 
 Amara signing in without being asked to register MFA was itself evidence: it confirmed the tenant-level gap the Conditional Access check reports — *no enabled policy requires MFA for all users*.
 
@@ -233,22 +233,28 @@ Amara signing in without being asked to register MFA was itself evidence: it con
 
 ## 8. Run the Identity Posture Audit
 
-<!-- Screenshot 04 (04-identity-audit-summary.png) is added after the full audit run. -->
-
 One command runs all six checks. Each check runs independently, so a failure in one (for example a missing permission) is recorded without stopping the others.
 
 ```powershell
-$summary = Invoke-KRSIdentityAudit -Scope Tenant -Redact
-$summary.Checks | Format-Table Check, Status, Rows, Findings, Critical, High, Medium, Low, Seconds
+$summary = Invoke-KRSIdentityAudit -Scope Pilot -Redact -InactiveDays 1
+$summary | Format-List Scope, Redacted, InactiveDays, TotalFindings, Critical, High, Medium, Low, FailedChecks, DurationSeconds
+$summary.Checks | Format-Table Check, Status, Rows, Findings, Critical, High, Medium, Low, Seconds -AutoSize
 ```
 
-*Results and screenshot are added after the scheduled audit run (the MFA registration report and sign-in data refresh on Microsoft's schedule).*
+`-InactiveDays 1` is a demo threshold: the pilot accounts were only days old, so the default 90 days would never flag them. Production runs use the default from `settings.json`.
+
+![Identity audit summary](screenshots/04-identity-audit-summary.png)
+*6 of 6 checks completed, 0 failed, 1,073 findings in about 44 seconds.*
+
+What the numbers mean:
+
+- **User checks are pilot-only.** MFA and stale-account checks returned only the 7 pilot users, as designed.
+- **Tenant-wide checks show the shared tenant's real posture.** Roles, apps and Conditional Access are tenant objects, so they are reported in full (with redaction). Almost all of the 1,013 High findings are about 1,000 standing (non-PIM) role assignments that already existed in the shared tenant, plus 3 Critical apps holding privilege-escalation Graph permissions. That is the kind of finding an audit exists to surface.
+- **Privileged roles dominate the runtime** (~40 s of ~44 s) because Graph returns role assignments in fixed pages of about 50.
 
 ---
 
 ## 9. Review the Ranked, Redacted Evidence
-
-<!-- Screenshot 05 (05-findings-csv.png) is added after the full audit run. -->
 
 The audit writes a timestamped evidence folder outside the repository:
 
@@ -258,13 +264,22 @@ The audit writes a timestamped evidence folder outside the repository:
 | `findings.csv` | Every finding across all checks, most severe first |
 | `summary.json` | Counts by check and severity, run metadata, correlation ID |
 
-*Screenshot of the redacted `findings.csv` is added after the scheduled audit run.*
+Filtering `findings.csv` to the pilot and the tenant baseline shows every seeded scenario detected, ranked by severity:
+
+```powershell
+Import-Csv (Join-Path $summary.OutputFolder 'findings.csv') |
+    Where-Object { $_.Subject -match 'kingsruleusa\.com|Daniel Reyes|Priya Shah|krs-demo|tenant baseline' } |
+    Format-Table Check, Severity, Subject, Finding -AutoSize
+```
+
+![Ranked findings for the pilot](screenshots/05-findings-csv.png)
+*Daniel (admin, no MFA) is Critical at the top. Below him: the expiring demo secret, two Conditional Access baseline gaps, users without MFA, 9 active Global Administrators, Daniel's standing access, then stale accounts. Sofia, who registered MFA, has no MFA finding; Priya's PIM-eligible role produces no standing-access finding.*
 
 ---
 
 ## 10. Prove It with Tests and Continuous Integration
 
-I wrote **119 Pester tests** covering every function, the scope guard, redaction, Graph paging and throttling retry, settings validation and the audit orchestrator. Graph is fully mocked, so **no tenant credentials exist in the repository or in GitHub**. Code standards are enforced as tests: help on every public function, no `Write-Host`, no secrets, every script must parse, and `settings.json` must never be tracked by Git.
+I wrote **128 Pester tests** covering every function, the scope guard, redaction, Graph paging and throttling retry, settings validation and the audit orchestrator. Graph is fully mocked, so **no tenant credentials exist in the repository or in GitHub**. Code standards are enforced as tests: help on every public function, no `Write-Host`, no secrets, every script must parse, and `settings.json` must never be tracked by Git.
 
 ```powershell
 ./build/build.ps1 -Task Analyze, Test, Package
@@ -273,7 +288,7 @@ I wrote **119 Pester tests** covering every function, the scope guard, redaction
 Every push runs the same build on Windows and Ubuntu with exact tool versions:
 
 ![CI green on Windows and Ubuntu](screenshots/06-ci-green.png)
-*119 tests, 119 passed, 0 failed and 87.3% coverage on both windows-latest and ubuntu-latest.*
+*Every push builds and tests on both windows-latest and ubuntu-latest. Current build: 128 tests, 128 passed, 0 failed, 87.7% coverage.*
 
 ---
 
@@ -292,9 +307,10 @@ Every push runs the same build on Windows and Ubuntu with exact tool versions:
 | PIM eligibility recognised | Priya reported Info (eligible) | PASS |
 | Compliant user | Sofia produces no MFA finding | PASS |
 | Credential expiry | Demo secret flagged High | PASS |
-| Admin without MFA | Daniel flagged Critical | PENDING — after MFA report refresh |
-| Stale accounts | Marcus and Daniel flagged | PENDING — accounts must be over 24 hours old |
-| Unit tests | 119 passed, 0 failed | PASS |
+| Admin without MFA | Daniel flagged Critical | PASS |
+| Stale accounts | Never-signed-in and inactive pilot users flagged | PASS |
+| Full audit | 6 of 6 checks complete, 0 failed | PASS |
+| Unit tests | 128 passed, 0 failed | PASS |
 | CI | Green on Windows and Ubuntu | PASS |
 
 ---
@@ -349,6 +365,10 @@ The privileged role report took **61 seconds**. I added stage timing and a Graph
 
 The first CI run failed in 17 seconds: `Set-PSResourceRepository` crashed because a brand-new runner has no repository settings file yet. I removed it, used `-TrustRepository` on each install, and pinned exact tool versions so CI runs exactly what passed locally.
 
+## A Report Flag That Lags Reality
+
+Daniel held User Administrator for more than 24 hours, yet the MFA check rated him High, not Critical: the registration report still had `isAdmin = False`. Microsoft refreshes that report on its own schedule, so an attacker-relevant fact was days stale. I changed the check to read **live role assignments** as well and added an `AdminSource` column (`RoleAssignment`, `Report` or both) so a reviewer can see why someone counts as an admin. If role data cannot be read, the check warns and falls back to the report instead of failing. Daniel now shows **Critical** with `AdminSource = RoleAssignment`.
+
 ## Data Refresh Is Not Instant
 
 New users, role changes and MFA registrations reach the authentication-methods report and sign-in activity on Microsoft's schedule, not immediately. I scheduled the full audit run after the data refreshed instead of treating an empty result as a bug.
@@ -367,7 +387,7 @@ New users, role changes and MFA registrations reach the authentication-methods r
 | Privileged access review | Standing vs PIM-eligible vs activated assignments; Global Admin count |
 | Application security | Credential expiry, long-lived secrets, privilege-escalation permissions |
 | Working in a shared tenant | Pilot boundary, write-side scope guard, redaction, change log with approvals |
-| Testing | 119 Pester tests with mocks, 87% coverage, standards enforced as tests |
+| Testing | 128 Pester tests with mocks, 87.7% coverage, standards enforced as tests |
 | CI/CD | GitHub Actions matrix on Windows and Ubuntu, pinned tool versions |
 | Performance analysis | Stage timing and request counting before optimising |
 | Technical documentation | Runbook, permission matrix, change log, this README |
@@ -418,15 +438,17 @@ m365-secops-automation-toolkit/
 |   |-- KRSSecOps.psd1 / .psm1      module manifest and loader
 |   |-- Public/Core/                connect, disconnect, pilot scope test
 |   |-- Public/Identity/            six checks + Invoke-KRSIdentityAudit
-|   |-- Private/                    Graph wrapper, config, logging, scope guard, redaction
+|   |-- Private/                    Graph wrapper, config, logging, scope guard, redaction, roles
 |   `-- Config/                     settings.example.json (settings.json is gitignored)
-|-- tests/                          119 Pester tests, Graph fully mocked
+|-- tests/                          128 Pester tests, Graph fully mocked
 |
 `-- screenshots/
     |-- 00-architecture-diagram.png
     |-- 01-app-certificate.png
     |-- 02-api-permissions.png
     |-- 03-connect-session.png
+    |-- 04-identity-audit-summary.png
+    |-- 05-findings-csv.png
     `-- 06-ci-green.png
 ```
 

@@ -50,14 +50,7 @@ function Get-KRSPrivilegedRoleReport {
     )
 
     $null = Get-KRSActiveConfig
-    $privilegedNames = @(
-        'Global Administrator', 'Privileged Role Administrator', 'Privileged Authentication Administrator',
-        'Security Administrator', 'Exchange Administrator', 'SharePoint Administrator', 'User Administrator',
-        'Application Administrator', 'Cloud Application Administrator', 'Authentication Administrator',
-        'Conditional Access Administrator', 'Helpdesk Administrator', 'Hybrid Identity Administrator',
-        'Intune Administrator', 'Compliance Administrator', 'Billing Administrator', 'Groups Administrator',
-        'Authentication Policy Administrator', 'Domain Name Administrator', 'Partner Tier2 Support'
-    )
+    $privilegedNames = Get-KRSPrivilegedRoleName
 
     Write-KRSLog -Action 'Read' -Target 'roleManagement/directory'
     $timer = [Diagnostics.Stopwatch]::StartNew()

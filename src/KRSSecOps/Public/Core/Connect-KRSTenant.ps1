@@ -70,6 +70,7 @@ function Connect-KRSTenant {
     $script:KRSCorrelationId = [guid]::NewGuid().ToString()
     $script:KRSPrincipalCache = @{}
     $script:KRSPilotMemberIds = $null
+    $script:KRSPrivilegedPrincipalIds = $null
 
     Write-KRSLog -Action 'Connect' -Target $config.TenantId -Message "App-only Graph session as '$($context.AppName)'"
 

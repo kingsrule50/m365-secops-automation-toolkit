@@ -117,3 +117,15 @@ function Get-KRSSeverityRank {
         default { 4 }
     }
 }
+
+function Format-KRSDayCount {
+    # "1 day", "5 days": keeps finding text grammatical in reports people read.
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)]
+        [int]$Days
+    )
+
+    if ([math]::Abs($Days) -eq 1) { "$Days day" } else { "$Days days" }
+}

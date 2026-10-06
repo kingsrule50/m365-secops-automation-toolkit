@@ -92,9 +92,9 @@ function Get-KRSGuestAccessReport {
 
             $finding, $severity = switch ($true) {
             (-not $enabled) { 'Disabled guest'; 'Info'; break }
-            ($state -eq 'PendingAcceptance' -and $pendingSince -and ($now - $pendingSince).TotalDays -gt $PendingDays) { "Invitation not redeemed for $([int]($now - $pendingSince).TotalDays) days"; 'Medium'; break }
+            ($state -eq 'PendingAcceptance' -and $pendingSince -and ($now - $pendingSince).TotalDays -gt $PendingDays) { "Invitation not redeemed for $(Format-KRSDayCount -Days ([int]($now - $pendingSince).TotalDays))"; 'Medium'; break }
             (-not $lastSignIn -and $state -ne 'PendingAcceptance' -and $null -ne $daysInactive -and $daysInactive -gt $InactiveDays) { 'Guest has never signed in'; 'Medium'; break }
-            ($lastSignIn -and $daysInactive -gt $InactiveDays) { "No sign-in for $daysInactive days"; 'Medium'; break }
+            ($lastSignIn -and $daysInactive -gt $InactiveDays) { "No sign-in for $(Format-KRSDayCount -Days $daysInactive)"; 'Medium'; break }
                 default { 'OK'; 'Info' }
             }
             if ($severity -eq 'Info' -and -not $IncludeCompliant) { continue }

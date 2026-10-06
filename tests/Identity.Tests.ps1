@@ -6,6 +6,11 @@ BeforeAll {
 Describe 'Get-KRSMfaGap' {
     BeforeEach {
         Initialize-TestSession -Drive $TestDrive
+        Mock Invoke-KRSGraphRequest -ModuleName KRSSecOps -ParameterFilter { $Uri -eq 'roleManagement/directory/roleDefinitions' } -MockWith {
+            [pscustomobject]@{ id = 'ua'; templateId = 'ua'; displayName = 'User Administrator' }
+            [pscustomobject]@{ id = 'dr'; templateId = 'dr'; displayName = 'Directory Readers' }
+        }
+        Mock Invoke-KRSGraphRequest -ModuleName KRSSecOps -ParameterFilter { $Uri -like 'roleManagement/directory/roleAssignments*' } -MockWith { }
         Mock Invoke-KRSGraphRequest -ModuleName KRSSecOps -ParameterFilter { $Uri -like 'reports/authenticationMethods/userRegistrationDetails*' } -MockWith {
             @(
                 [pscustomobject]@{ id = '1'; userPrincipalName = 'priya.shah@m365.kingsruleusa.com'; userDisplayName = 'Priya Shah'; userType = 'member'; isAdmin = $true; isMfaRegistered = $false; isMfaCapable = $false; methodsRegistered = @() }
@@ -44,6 +49,30 @@ Describe 'Get-KRSMfaGap' {
         $row = Get-KRSMfaGap -Scope Tenant -Redact | Where-Object InPilot -eq $false
         $row.UserPrincipalName | Should -Be 'c***@contoso.com'
         $row.DisplayName | Should -Be 'Redacted (outside pilot)'
+    }
+
+    It 'treats a live privileged role holder as admin even when the report lags' {
+        Mock Invoke-KRSGraphRequest -ModuleName KRSSecOps -ParameterFilter { $Uri -like 'roleManagement/directory/roleAssignments*' } -MockWith {
+            [pscustomobject]@{ principalId = '2'; roleDefinitionId = 'ua' }
+        }
+        $row = Get-KRSMfaGap | Where-Object UserPrincipalName -eq 'amara.okafor@m365.kingsruleusa.com'
+        $row.IsAdmin | Should -BeTrue
+        $row.AdminSource | Should -Be 'RoleAssignment'
+        $row.Severity | Should -Be 'Critical'
+    }
+
+    It 'does not treat a non-privileged role as admin' {
+        Mock Invoke-KRSGraphRequest -ModuleName KRSSecOps -ParameterFilter { $Uri -like 'roleManagement/directory/roleAssignments*' } -MockWith {
+            [pscustomobject]@{ principalId = '2'; roleDefinitionId = 'dr' }
+        }
+        (Get-KRSMfaGap | Where-Object UserPrincipalName -eq 'amara.okafor@m365.kingsruleusa.com').Severity | Should -Be 'High'
+    }
+
+    It 'falls back to the report flag when role data cannot be read' {
+        Mock Invoke-KRSGraphRequest -ModuleName KRSSecOps -ParameterFilter { $Uri -like 'roleManagement/directory/roleAssignments*' } -MockWith { throw 'Forbidden (403)' }
+        $row = Get-KRSMfaGap -WarningAction SilentlyContinue | Where-Object UserPrincipalName -eq 'priya.shah@m365.kingsruleusa.com'
+        $row.AdminSource | Should -Be 'Report'
+        $row.Severity | Should -Be 'Critical'
     }
 
     It 'skips guests unless -IncludeGuests' {

@@ -28,6 +28,7 @@ function Initialize-TestSession {
         }
         $script:KRSCorrelationId = 'test-correlation-id'
         $script:KRSPrincipalCache = @{}
+        $script:KRSPrivilegedPrincipalIds = $null
         $script:KRSPilotMemberIds = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
         foreach ($id in $Members) { $null = $script:KRSPilotMemberIds.Add($id) }
     }

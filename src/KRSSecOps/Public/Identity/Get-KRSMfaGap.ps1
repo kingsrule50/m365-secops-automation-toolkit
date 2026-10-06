@@ -9,6 +9,8 @@ function Get-KRSMfaGap {
           High      member with no MFA registered
           Medium    admin with MFA but no phishing-resistant method (FIDO2, Windows Hello, passkey)
         Guests are skipped unless -IncludeGuests is used, because their MFA lives in their home tenant.
+        Admin status comes from live privileged role assignments as well as the report's isAdmin flag,
+        because the report can lag role changes by a day or more. AdminSource shows which source applied.
 
     .PARAMETER Scope
         Pilot (default) returns pilot users only. Tenant returns everyone.
@@ -37,7 +39,8 @@ function Get-KRSMfaGap {
 
     .NOTES
         Graph: GET /reports/authenticationMethods/userRegistrationDetails
-        Permission: AuditLog.Read.All (application). Licence: Entra ID P1 or P2.
+        Graph: GET /roleManagement/directory/roleDefinitions, /roleManagement/directory/roleAssignments
+        Permissions: AuditLog.Read.All, RoleManagement.Read.Directory (application). Licence: Entra ID P1 or P2.
     #>
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -61,6 +64,7 @@ function Get-KRSMfaGap {
 
     Write-KRSLog -Action 'Read' -Target 'userRegistrationDetails' -Message "Scope=$Scope"
     $records = Invoke-KRSGraphRequest -Uri 'reports/authenticationMethods/userRegistrationDetails?$top=999' -All
+    $roleHolders = Get-KRSPrivilegedPrincipalSet
 
     foreach ($record in $records) {
         $upn = Get-KRSValue -InputObject $record -Name 'userPrincipalName'
@@ -71,7 +75,10 @@ function Get-KRSMfaGap {
         $identity = Format-KRSIdentity -UserPrincipalName $upn -DisplayName (Get-KRSValue -InputObject $record -Name 'userDisplayName') -Id $id -Redact:$Redact
         if ($Scope -eq 'Pilot' -and -not $identity.InPilot) { continue }
 
-        $isAdmin = [bool](Get-KRSValue -InputObject $record -Name 'isAdmin')
+        $reportAdmin = [bool](Get-KRSValue -InputObject $record -Name 'isAdmin')
+        $roleAdmin = [bool]($id -and $roleHolders.Contains([string]$id))
+        $isAdmin = $reportAdmin -or $roleAdmin
+        $adminSource = if ($roleAdmin -and $reportAdmin) { 'RoleAssignment+Report' } elseif ($roleAdmin) { 'RoleAssignment' } elseif ($reportAdmin) { 'Report' } else { $null }
         $isRegistered = [bool](Get-KRSValue -InputObject $record -Name 'isMfaRegistered')
         $methods = @(Get-KRSValue -InputObject $record -Name 'methodsRegistered') | Where-Object { $_ }
         $hasStrong = [bool]($methods | Where-Object { $_ -match $phishingResistant })
@@ -90,6 +97,7 @@ function Get-KRSMfaGap {
             DisplayName          = $identity.DisplayName
             UserType             = $userType
             IsAdmin              = $isAdmin
+            AdminSource          = $adminSource
             IsMfaRegistered      = $isRegistered
             IsMfaCapable         = [bool](Get-KRSValue -InputObject $record -Name 'isMfaCapable')
             HasPhishingResistant = $hasStrong
