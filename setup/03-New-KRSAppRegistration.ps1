@@ -166,8 +166,12 @@ else {
     }
     $body = @{ requiredResourceAccess = @($merged.Keys | ForEach-Object { @{ resourceAppId = $_; resourceAccess = @($merged[$_]) } }) }
 
+    # customKeyIdentifier can come back as the hex thumbprint itself or as base64 of its bytes.
+    # A 40-character hex string is also valid base64, so test for hex first.
     $thumbprints = @($app.keyCredentials | Where-Object { $_ } | ForEach-Object {
-            if ($_.customKeyIdentifier) { [Convert]::ToHexString([Convert]::FromBase64String($_.customKeyIdentifier)) }
+            $id = [string]$_.customKeyIdentifier
+            if ($id -match '^[0-9A-Fa-f]{40}$') { $id.ToUpperInvariant() }
+            elseif ($id) { [Convert]::ToHexString([Convert]::FromBase64String($id)) }
         })
     if ($certificate.Thumbprint -notin $thumbprints) {
         if (@($app.keyCredentials | Where-Object { $_ }).Count -eq 0) {
