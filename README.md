@@ -3,7 +3,8 @@
 ![PowerShell](https://img.shields.io/badge/PowerShell-7.4-5391FE?logo=powershell&logoColor=white)
 ![Microsoft Graph](https://img.shields.io/badge/Microsoft%20Graph-v1.0-0078D4?logo=microsoft&logoColor=white)
 ![Entra ID](https://img.shields.io/badge/Microsoft%20Entra%20ID-P2%20%2F%20PIM-0078D4?logo=microsoftazure&logoColor=white)
-![Pester](https://img.shields.io/badge/Pester-128%20tests-2E7D32)
+![Exchange Online](https://img.shields.io/badge/Exchange%20Online-RBAC%20for%20Apps-0078D4?logo=microsoftexchange&logoColor=white)
+![Pester](https://img.shields.io/badge/Pester-201%20tests-2E7D32)
 [![CI](https://github.com/kingsrule50/m365-secops-automation-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/kingsrule50/m365-secops-automation-toolkit/actions/workflows/ci.yml)
 
 **KRSSecOps is a PowerShell 7 module I built to automate Microsoft 365 security operations safely in a tenant I don't own: certificate-only authentication, least-privilege permissions, a pilot-scoped blast radius, and a tested, CI-verified codebase.**
@@ -15,19 +16,30 @@
 | Part | What it does | Status |
 | --- | --- | --- |
 | **[Part 1 — Identity Posture Audit](parts/part-1-identity-audit/README.md)** | One command runs six identity checks (MFA gaps, stale accounts, standing privileged access, guests, app credentials, Conditional Access) and produces ranked, redacted evidence | ✅ Complete |
-| **Part 2 — Compliance-as-Code** | Exports Purview labels, DLP and retention to a version-controlled baseline, detects drift, and enforces Exchange mailbox security settings inside the pilot only | 🔨 In progress |
+| **[Part 2 — Compliance-as-Code](parts/part-2-compliance-as-code/README.md)** | Baselines Purview labels, DLP and retention and detects drift; checks and enforces mailbox security with an app that Exchange confines to 3 pilot mailboxes and 2 commands | ✅ Complete |
 | **Part 3 — Detection & Safe Containment** | Detects risky mailbox and sign-in activity and runs approval-gated containment with a reporting trail | Planned |
 
 ---
 
-## Headline Results (Part 1)
+## Headline Results
+
+**Part 1 — Identity posture audit**
 
 ![Ranked findings for the pilot](parts/part-1-identity-audit/screenshots/05-findings-csv.png)
 
 - **6 of 6 checks, 0 failures, about 44 seconds** against a live Microsoft 365 E5 tenant
 - **Every seeded risk detected**, including an admin with no MFA rated **Critical** from live role data, even though Microsoft's own report hadn't caught up yet
 - **6 read-only Graph permissions**, no client secrets, non-exportable certificate
-- **128 Pester tests, 87.7% coverage**, CI green on Windows and Ubuntu
+
+**Part 2 — Compliance-as-code**
+
+![Exchange enforces the app's boundary](parts/part-2-compliance-as-code/screenshots/03-boundary-test.png)
+
+- **Exchange itself confines the app:** a write inside the pilot works; outside the scope or outside the role, Exchange refuses it
+- **3 seeded risks, 3 High findings:** external forwarding, a malicious inbox rule, and a DLP policy quietly switched to test mode (caught as baseline drift)
+- **13 → 6 findings** after `-WhatIf` and enforcement; what remains is deliberately left for a person
+
+**Engineering:** 201 Pester tests, 90% coverage, CI green on Windows and Ubuntu
 
 ---
 
@@ -36,8 +48,8 @@
 | Principle | How |
 | --- | --- |
 | No secrets | Certificate auth, private key can't be exported; settings, certificates, logs and reports are gitignored, and tests enforce it |
-| Least privilege | Per-part permissions, each one justified in [docs/permission-matrix.md](docs/permission-matrix.md) |
-| Blast radius | Changes are refused outside the pilot domain `m365.kingsruleusa.com`; output is redacted for sharing |
+| Least privilege | Per-part permissions, each one justified in [docs/permission-matrix.md](docs/permission-matrix.md); Exchange access through a custom role trimmed to 6 commands |
+| Blast radius | The code refuses changes outside the pilot domain `m365.kingsruleusa.com`, and Exchange refuses them outside the tagged pilot mailboxes; output is redacted for sharing |
 | Change control | `-WhatIf` on every change; every tenant change is approved and logged in [docs/change-log.md](docs/change-log.md) |
 
 ---
@@ -49,10 +61,13 @@
 ./build/build.ps1                                   # analyze, test, package
 Import-Module ./src/KRSSecOps/KRSSecOps.psd1
 Connect-KRSTenant
-Invoke-KRSIdentityAudit -Scope Pilot -Redact
+Invoke-KRSIdentityAudit -Scope Pilot -Redact      # Part 1
+
+Connect-KRSCompliance
+Invoke-KRSComplianceAudit -Redact                  # Part 2
 ```
 
-Full setup, including the certificate and app registration, is in the [Part 1 runbook](parts/part-1-identity-audit/runbook.md).
+Full setup is in the [Part 1 runbook](parts/part-1-identity-audit/runbook.md) and the [Part 2 runbook](parts/part-2-compliance-as-code/runbook.md).
 
 ---
 
@@ -62,9 +77,9 @@ Full setup, including the certificate and app registration, is in the [Part 1 ru
 m365-secops-automation-toolkit/
 |-- README.md                       this overview
 |-- parts/                          one write-up per part, with its runbook and screenshots
-|-- src/KRSSecOps/                  the module (Public/Core, Public/Identity, Private, Config)
+|-- src/KRSSecOps/                  the module (Public/Core, Public/Identity, Public/Compliance, Private, Config)
 |-- setup/                          numbered setup scripts, all with -WhatIf
-|-- tests/                          Pester tests, Microsoft Graph fully mocked
+|-- tests/                          Pester tests, Graph, Exchange and Purview fully mocked
 |-- build/                          build.ps1 and analyzer settings
 |-- docs/                           permission matrix and tenant change log
 |-- .github/workflows/ci.yml        CI on windows-latest and ubuntu-latest

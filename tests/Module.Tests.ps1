@@ -85,6 +85,12 @@ Describe 'Code standards' {
             Select-String -Pattern '\bInvoke-MgGraphRequest\b' | Should -BeNullOrEmpty
     }
 
+    It 'routes every Exchange and Purview command through Invoke-KRSExoCommand' {
+        # Direct calls would skip -ErrorAction Stop, so a refused write could look like a success.
+        $pattern = '(^\s*|[|;=({]\s*)(Get|Set|New|Remove)-(Mailbox|CASMailbox|InboxRule|Label|LabelPolicy|DlpCompliance\w+|RetentionCompliance\w+|TransportRule|TransportConfig|AcceptedDomain)\b'
+        $allSource | Where-Object Name -ne 'Exchange.ps1' | Select-String -Pattern $pattern | Should -BeNullOrEmpty
+    }
+
     It 'never references client secrets' {
         $allSource | Select-String -Pattern 'ClientSecret|client_secret' | Should -BeNullOrEmpty
     }
