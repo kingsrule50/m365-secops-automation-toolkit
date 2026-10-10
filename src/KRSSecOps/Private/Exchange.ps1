@@ -5,7 +5,9 @@
 $script:KRSExchangeCommands = @(
     'Get-Mailbox', 'Get-CASMailbox', 'Get-InboxRule', 'Get-Recipient', 'Set-Mailbox', 'Set-CASMailbox',
     'Get-AcceptedDomain', 'Get-HostedOutboundSpamFilterPolicy', 'Get-TransportRule', 'Get-RemoteDomain',
-    'Get-DkimSigningConfig', 'Get-TransportConfig', 'Get-OrganizationConfig'
+    'Get-DkimSigningConfig', 'Get-TransportConfig', 'Get-OrganizationConfig',
+    # Part 3: audit search (View-Only Audit Logs) and inbox rule containment (pilot scope)
+    'Search-UnifiedAuditLog', 'Disable-InboxRule', 'Enable-InboxRule'
 )
 $script:KRSPurviewCommands = @(
     'Get-Label', 'Get-LabelPolicy', 'Get-DlpCompliancePolicy', 'Get-DlpComplianceRule',

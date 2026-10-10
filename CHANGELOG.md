@@ -2,6 +2,24 @@
 
 All notable changes to KRSSecOps are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the module uses [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - Part 3
+
+### Added
+- `Find-KRSCompromiseIndicator`: external inbox rules and forwarding, unified audit log rule changes, failed, legacy and multi-country sign-ins, and Entra ID Protection risk, ranked per user. A source that cannot be read is reported as "(not checked)" with the reason.
+- `Invoke-KRSContainment`: block sign-in, revoke sessions and disable external forwarding rules, with a ticket ID, a two-person rule, `ConfirmImpact = High`, a pilot-domain guard and a JSON containment record.
+- `Undo-KRSContainment`: recovery driven by the containment record; malicious rules stay disabled unless `-IncludeInboxRules` is used; writes an undo record.
+- `Export-KRSIncidentReport`: HTML report plus `indicators.csv`, `signins.csv` and `incident.json` per ticket, with operator and approver on every action and `-Redact` support.
+- `setup/07-Set-KRSContainmentRbac.ps1`: administrative unit with the pilot users, User Administrator scoped to it, Exchange inbox-rule commands and View-Only Audit Logs.
+- `-Redact` hashes audit actors outside the pilot (domain included) and shortens IP addresses, including bracketed IPv6 and addresses with ports.
+
+### Changed
+- `setup/03-New-KRSAppRegistration.ps1 -Part 3` grants only `IdentityRiskyUser.Read.All`; the planned tenant-wide write permissions were dropped in favour of the scoped role.
+
+### Fixed
+- Audit `CreationTime` values are read as UTC instead of local time.
+- A disabled forwarding rule stays visible in detection as Low evidence instead of disappearing.
+- Successful sign-ins no longer show Graph's placeholder failure reason ("Other.").
+
 ## [0.2.0] - Part 2
 
 ### Added

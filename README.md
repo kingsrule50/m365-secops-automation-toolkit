@@ -4,7 +4,7 @@
 ![Microsoft Graph](https://img.shields.io/badge/Microsoft%20Graph-v1.0-0078D4?logo=microsoft&logoColor=white)
 ![Entra ID](https://img.shields.io/badge/Microsoft%20Entra%20ID-P2%20%2F%20PIM-0078D4?logo=microsoftazure&logoColor=white)
 ![Exchange Online](https://img.shields.io/badge/Exchange%20Online-RBAC%20for%20Apps-0078D4?logo=microsoftexchange&logoColor=white)
-![Pester](https://img.shields.io/badge/Pester-201%20tests-2E7D32)
+![Pester](https://img.shields.io/badge/Pester-257%20tests-2E7D32)
 [![CI](https://github.com/kingsrule50/m365-secops-automation-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/kingsrule50/m365-secops-automation-toolkit/actions/workflows/ci.yml)
 
 **KRSSecOps is a PowerShell 7 module I built to automate Microsoft 365 security operations safely in a tenant I don't own: certificate-only authentication, least-privilege permissions, a pilot-scoped blast radius, and a tested, CI-verified codebase.**
@@ -17,7 +17,7 @@
 | --- | --- | --- |
 | **[Part 1 — Identity Posture Audit](parts/part-1-identity-audit/README.md)** | One command runs six identity checks (MFA gaps, stale accounts, standing privileged access, guests, app credentials, Conditional Access) and produces ranked, redacted evidence | ✅ Complete |
 | **[Part 2 — Compliance-as-Code](parts/part-2-compliance-as-code/README.md)** | Baselines Purview labels, DLP and retention and detects drift; checks and enforces mailbox security with an app that Exchange confines to 3 pilot mailboxes and 2 commands | ✅ Complete |
-| **Part 3 — Detection & Safe Containment** | Detects risky mailbox and sign-in activity and runs approval-gated containment with a reporting trail | Planned |
+| **[Part 3 — Detection & Safe Containment](parts/part-3-detection-containment/README.md)** | Correlates rules, audit, sign-in and risk data; contains a compromised account behind a ticket and a second approver, with write access Entra confines to 3 pilot users; recovers from the record and produces a redacted incident report | ✅ Complete |
 
 ---
 
@@ -39,7 +39,15 @@
 - **3 seeded risks, 3 High findings:** external forwarding, a malicious inbox rule, and a DLP policy quietly switched to test mode (caught as baseline drift)
 - **13 → 6 findings** after `-WhatIf` and enforcement; what remains is deliberately left for a person
 
-**Engineering:** 201 Pester tests, 90% coverage, CI green on Windows and Ubuntu
+**Part 3 — Detection and safe containment**
+
+![Entra enforces the containment boundary](parts/part-3-detection-containment/screenshots/01-entra-au-boundary.png)
+
+- **Entra itself confines containment:** the app's only directory role is scoped to an administrative unit; a change inside it works, outside it Graph returns **403**. No tenant-wide write permission
+- **Four evidence sources, one view:** the planted forwarding rule rated **High**, with who created it and from where, masked for sharing
+- **Contain → recover → report** on ticket INC-1042: 3 actions done, sign-in restored from the record, the malicious rule **kept disabled as evidence**, operator and approver on every row
+
+**Engineering:** 257 Pester tests, 91.6% coverage, CI green on Windows and Ubuntu
 
 ---
 
@@ -48,9 +56,9 @@
 | Principle | How |
 | --- | --- |
 | No secrets | Certificate auth, private key can't be exported; settings, certificates, logs and reports are gitignored, and tests enforce it |
-| Least privilege | Per-part permissions, each one justified in [docs/permission-matrix.md](docs/permission-matrix.md); Exchange access through a custom role trimmed to 6 commands |
-| Blast radius | The code refuses changes outside the pilot domain `m365.kingsruleusa.com`, and Exchange refuses them outside the tagged pilot mailboxes; output is redacted for sharing |
-| Change control | `-WhatIf` on every change; every tenant change is approved and logged in [docs/change-log.md](docs/change-log.md) |
+| Least privilege | Per-part permissions, each one justified in [docs/permission-matrix.md](docs/permission-matrix.md); Exchange access through a custom role trimmed to 8 commands; containment through a role scoped to an administrative unit |
+| Blast radius | The code refuses changes outside the pilot domain `m365.kingsruleusa.com`; Exchange refuses them outside the tagged pilot mailboxes and Entra outside the administrative unit; output is redacted for sharing |
+| Change control | `-WhatIf` on every change; containment needs a ticket and a second approver; every tenant change is approved and logged in [docs/change-log.md](docs/change-log.md) |
 
 ---
 
@@ -65,9 +73,13 @@ Invoke-KRSIdentityAudit -Scope Pilot -Redact      # Part 1
 
 Connect-KRSCompliance
 Invoke-KRSComplianceAudit -Redact                  # Part 2
+
+Find-KRSCompromiseIndicator -UserPrincipalName <upn> -Redact                       # Part 3
+Invoke-KRSContainment -UserPrincipalName <upn> -TicketId INC-1042 -ApprovedBy '<approver>' -WhatIf
+Export-KRSIncidentReport -UserPrincipalName <upn> -TicketId INC-1042 -Redact
 ```
 
-Full setup is in the [Part 1 runbook](parts/part-1-identity-audit/runbook.md) and the [Part 2 runbook](parts/part-2-compliance-as-code/runbook.md).
+Full setup is in the [Part 1](parts/part-1-identity-audit/runbook.md), [Part 2](parts/part-2-compliance-as-code/runbook.md) and [Part 3](parts/part-3-detection-containment/runbook.md) runbooks.
 
 ---
 
@@ -77,7 +89,7 @@ Full setup is in the [Part 1 runbook](parts/part-1-identity-audit/runbook.md) an
 m365-secops-automation-toolkit/
 |-- README.md                       this overview
 |-- parts/                          one write-up per part, with its runbook and screenshots
-|-- src/KRSSecOps/                  the module (Public/Core, Public/Identity, Public/Compliance, Private, Config)
+|-- src/KRSSecOps/                  the module (Public/Core, Identity, Compliance, Response; Private; Config)
 |-- setup/                          numbered setup scripts, all with -WhatIf
 |-- tests/                          Pester tests, Graph, Exchange and Purview fully mocked
 |-- build/                          build.ps1 and analyzer settings
@@ -88,4 +100,4 @@ m365-secops-automation-toolkit/
 
 ---
 
-*Built by Chinedu Asuzu (CISA, Security+, SC-401) in a shared Microsoft 365 developer tenant with test identities and the tenant owner's approval. Tenant and admin details are redacted from all screenshots.*
+*Built by Chinedu Asuzu (CompTIA Security+, Microsoft SC-401) in a shared Microsoft 365 developer tenant with test identities and the tenant owner's approval. Tenant and admin details are redacted from all screenshots.*

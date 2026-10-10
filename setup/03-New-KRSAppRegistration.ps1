@@ -26,10 +26,6 @@
 .PARAMETER Part
     Lab part(s) whose permissions to grant. Default 1.
 
-.PARAMETER IncludeWritePermissions
-    Part 3 only: also grant the containment permissions (disable user, revoke sessions).
-    Leave this off until the tenant owner approves write access.
-
 .PARAMETER DisplayName
     App registration name. Default app-krs-secops-automation.
 
@@ -55,9 +51,6 @@ param(
     [int[]]$Part = 1,
 
     [Parameter()]
-    [switch]$IncludeWritePermissions,
-
-    [Parameter()]
     [string]$DisplayName = 'app-krs-secops-automation'
 )
 
@@ -78,21 +71,15 @@ $permissionSets = @{
     2 = @(
         @{ Resource = $exchangeAppId; Name = 'Exchange.ManageAsApp' }
     )
+    # Part 3 containment writes (block sign-in, revoke sessions) are NOT granted as Graph permissions:
+    # User.EnableDisableAccount.All and User.RevokeSessions.All work on every user in the tenant.
+    # Instead, setup/07 assigns User Administrator scoped to an administrative unit of pilot users.
     3 = @(
         @{ Resource = $graphAppId; Name = 'IdentityRiskyUser.Read.All' }
-        @{ Resource = $graphAppId; Name = 'IdentityRiskEvent.Read.All' }
     )
 }
-$writePermissions = @(
-    @{ Resource = $graphAppId; Name = 'User.EnableDisableAccount.All' }
-    @{ Resource = $graphAppId; Name = 'User.RevokeSessions.All' }
-)
 
 $wanted = foreach ($p in ($Part | Sort-Object -Unique)) { $permissionSets[$p] }
-if ($IncludeWritePermissions) {
-    if (3 -notin $Part) { throw '-IncludeWritePermissions applies to Part 3 only.' }
-    $wanted += $writePermissions
-}
 
 function Invoke-Graph {
     param([string]$Method = 'GET', [string]$Uri, [object]$Body)

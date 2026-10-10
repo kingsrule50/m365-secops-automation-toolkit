@@ -1,6 +1,6 @@
 @{
     RootModule           = 'KRSSecOps.psm1'
-    ModuleVersion        = '0.2.0'
+    ModuleVersion        = '0.3.0'
     GUID                 = '6f1d3c2a-8b4e-4f7a-9c1d-2e5b7a9f0c31'
     Author               = 'Chinedu (kingsrule50)'
     CompanyName          = 'kingsrule llc'
@@ -32,6 +32,10 @@
         'Set-KRSMailboxBaseline'
         'Get-KRSExchangeTenantRisk'
         'Invoke-KRSComplianceAudit'
+        'Find-KRSCompromiseIndicator'
+        'Invoke-KRSContainment'
+        'Undo-KRSContainment'
+        'Export-KRSIncidentReport'
     )
     CmdletsToExport      = @()
     VariablesToExport    = @()
@@ -42,7 +46,7 @@
             Tags         = @('Security', 'M365', 'EntraID', 'Purview', 'ExchangeOnline', 'MicrosoftGraph', 'SecOps', 'Audit')
             LicenseUri   = 'https://github.com/kingsrule50/m365-secops-automation-toolkit/blob/main/LICENSE'
             ProjectUri   = 'https://github.com/kingsrule50/m365-secops-automation-toolkit'
-            ReleaseNotes = 'Part 2: Exchange Online and Purview compliance-as-code (baseline export, drift detection, mailbox desired state). Part 1: Entra ID identity posture audit.'
+            ReleaseNotes = 'Part 3: compromise detection, approval-gated containment scoped by an administrative unit, incident reports. Part 2: Exchange Online and Purview compliance-as-code (baseline export, drift detection, mailbox desired state). Part 1: Entra ID identity posture audit.'
         }
     }
 }

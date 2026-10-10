@@ -8,7 +8,7 @@
 
 **Exchange Online and Microsoft Purview controls managed as code: a version-controlled Purview baseline with drift detection, mailbox security checked and enforced as desired state, and an automation identity that Exchange itself confines to three pilot mailboxes and two commands.**
 
-> **Series:** [Toolkit overview](../../README.md) · [Part 1 — Identity posture audit](../part-1-identity-audit/README.md) · **Part 2 — Compliance-as-code (this page)** · Part 3 — Detection, safe containment and reporting
+> **Series:** [Toolkit overview](../../README.md) · [Part 1 — Identity posture audit](../part-1-identity-audit/README.md) · **Part 2 — Compliance-as-code (this page)** · [Part 3 — Detection, safe containment and reporting](../part-3-detection-containment/README.md)
 >
 > Step-by-step commands: [runbook.md](runbook.md)
 
@@ -191,7 +191,7 @@ Set-KRSMailboxBaseline
 ![Before and after](screenshots/10-after-remediation.png)
 *13 → 6 findings, 3 → 2 High. Everything the app is allowed to fix is fixed. Amara's inbox rule (report-only) and the DLP drift (read-only) remain for a person, and the four organisation-wide findings belong to the tenant owner.*
 
-I then switched the DLP policy back to `Enable`. Amara's inbox rule stays in place as the starting point for Part 3.
+I then switched the DLP policy back to `Enable`. Amara's inbox rule stays in place as the starting point for [Part 3](../part-3-detection-containment/README.md).
 
 ---
 

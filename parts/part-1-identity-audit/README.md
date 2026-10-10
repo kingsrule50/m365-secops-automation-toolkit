@@ -8,7 +8,7 @@
 
 **An enterprise-grade PowerShell module that audits a Microsoft 365 tenant's identity security posture with one command — certificate-only authentication, least-privilege Graph permissions, a pilot-scoped blast radius, and a tested, CI-verified codebase.**
 
-> **Series:** [Toolkit overview](../../README.md) · **Part 1 — Identity posture audit (this page)** · [Part 2 — Compliance-as-code for Purview and Exchange](../part-2-compliance-as-code/README.md) · Part 3 — Detection, safe containment and reporting
+> **Series:** [Toolkit overview](../../README.md) · **Part 1 — Identity posture audit (this page)** · [Part 2 — Compliance-as-code for Purview and Exchange](../part-2-compliance-as-code/README.md) · [Part 3 — Detection, safe containment and reporting](../part-3-detection-containment/README.md)
 >
 > Step-by-step commands: [runbook.md](runbook.md)
 
