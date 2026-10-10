@@ -9,7 +9,7 @@
 
 **Account-compromise detection across mailbox, audit, sign-in and risk data; approval-gated containment that the platform itself limits to three pilot users; reversible recovery; and a redacted incident report that ties every action to a ticket, an operator and an approver.**
 
-> **Series:** [Toolkit overview](../../README.md) · [Part 1 — Identity posture audit](../part-1-identity-audit/README.md) · [Part 2 — Compliance-as-code](../part-2-compliance-as-code/README.md) · **Part 3 — Detection, safe containment and reporting (this page)**
+> **Series:** [Toolkit overview](../../docs/toolkit-overview.md) · [Part 1 — Identity posture audit](../../README.md) · [Part 2 — Compliance-as-code](../part-2-compliance-as-code/README.md) · **Part 3 — Detection, safe containment and reporting (this page)**
 >
 > Step-by-step commands: [runbook.md](runbook.md)
 
@@ -334,7 +334,7 @@ The completed part demonstrates practical skills relevant to:
 
 ## Repository Structure
 
-Part 3 adds these files to the shared toolkit (full layout in the [toolkit overview](../../README.md#repository-structure)):
+Part 3 adds these files to the shared toolkit (full layout in the [toolkit overview](../../docs/toolkit-overview.md#repository-structure)):
 
 ```text
 src/KRSSecOps/

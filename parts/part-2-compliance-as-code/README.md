@@ -8,7 +8,7 @@
 
 **Exchange Online and Microsoft Purview controls managed as code: a version-controlled Purview baseline with drift detection, mailbox security checked and enforced as desired state, and an automation identity that Exchange itself confines to three pilot mailboxes and two commands.**
 
-> **Series:** [Toolkit overview](../../README.md) · [Part 1 — Identity posture audit](../part-1-identity-audit/README.md) · **Part 2 — Compliance-as-code (this page)** · [Part 3 — Detection, safe containment and reporting](../part-3-detection-containment/README.md)
+> **Series:** [Toolkit overview](../../docs/toolkit-overview.md) · [Part 1 — Identity posture audit](../../README.md) · **Part 2 — Compliance-as-code (this page)** · [Part 3 — Detection, safe containment and reporting](../part-3-detection-containment/README.md)
 >
 > Step-by-step commands: [runbook.md](runbook.md)
 
@@ -311,7 +311,7 @@ The completed part demonstrates practical skills relevant to:
 
 ## Repository Structure
 
-Part 2 adds these files to the shared toolkit (full layout in the [toolkit overview](../../README.md#repository-structure)):
+Part 2 adds these files to the shared toolkit (full layout in the [toolkit overview](../../docs/toolkit-overview.md#repository-structure)):
 
 ```text
 src/KRSSecOps/
